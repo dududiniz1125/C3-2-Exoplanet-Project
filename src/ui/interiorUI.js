@@ -2,7 +2,7 @@ import { INTERIOR, PLANET } from '../data/c32.js';
 import { ICONS } from './icons.js';
 
 // DOM side of the Interior view: depth gauge, layer card, step navigation.
-const SWATCH = ['#ffd2a8', '#20b3ad', '#a9d4f2', '#5e6fc4', '#ff7a2a'];
+const SWATCH = ['#f7dcc4', '#20b3ad', '#a6cfec', '#5e6fc4', '#ff7a2a'];
 
 export function createInteriorUI({ root, gauge, card, body, nav }, { onBack, onPrev, onNext, onStep }) {
   const layers = INTERIOR.layers;

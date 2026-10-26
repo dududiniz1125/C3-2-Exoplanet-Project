@@ -54,9 +54,10 @@ void main() {
   } else if (idx == 2) {
     // High-pressure ice VII: pale blue crystals
     float w = worley(vec3(vP * 38.0, 0.5));
-    float w2 = worley(vec3(vP * 90.0, 3.1));
     col = mix(uColA[2], uColB[2], smoothstep(0.05, 0.75, w));
-    col += vec3(0.9, 0.97, 1.0) * (1.0 - smoothstep(0.0, 0.06, w2)) * (0.35 + 0.35 * sin(uTime * 1.3 + w * 30.0));
+    // glints on the crystal edges
+    float glint = smoothstep(0.55, 0.62, w) * (0.5 + 0.5 * snoise(vec3(vP * 60.0, uTime * 0.6)));
+    col += vec3(0.9, 0.97, 1.0) * glint * 0.25;
   } else if (idx == 3) {
     // Volatile-rich mantle: hazy, swirling purple-blue
     vec3 q = vec3(vP * 4.0, uTime * 0.04);
@@ -82,7 +83,7 @@ void main() {
   // Highlight the layer the story is on, dim the others
   if (uActive > -0.5) {
     bool on = abs(float(idx) - uActive) < 0.5;
-    col *= on ? 1.2 : 0.38;
+    col *= on ? 1.08 : 0.38;
     if (on) alpha = max(alpha, 0.9);
   }
 

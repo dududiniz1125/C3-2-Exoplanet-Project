@@ -174,6 +174,7 @@ export function createPlanetView({ scene, planetTexture, lightColor, rig }) {
       spinScale = s;
     },
     materials: mats,
+    meshes: { surface, clouds, atmo },
     clippable: [mats.surface, mats.clouds, mats.atmo],
     controlsLimits: { minDistance: 1.2, maxDistance: 9, enablePan: false },
     interiorTriggerDistance: 1.34,

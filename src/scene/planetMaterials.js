@@ -31,6 +31,7 @@ export function createPlanetMaterials(dataTexture, lightColor) {
       uIce: { value: new THREE.Color(COLORS.ice) },
       uNight: { value: new THREE.Vector3(0.025, 0.035, 0.06) },
       uAtmo: { value: new THREE.Color(COLORS.atmo) },
+      uDim: { value: 1 },
     },
   });
   const clouds = new THREE.ShaderMaterial({

@@ -16,9 +16,9 @@ import { PLANET_STAGE } from './planetView.js';
 const WEDGE = Math.PI / 2;
 
 const LAYER_COLORS = [
-  ['#ffd2a8', '#fff1e2'], // atmosphere: orange-white
+  ['#f0b98a', '#f7dcc4'], // atmosphere: orange-white
   ['#04313f', '#20b3ad'], // ocean: deep teal -> bright teal at the top
-  ['#7fb2d9', '#d8f0ff'], // ice VII: pale blue
+  ['#4a7fae', '#a6cfec'], // ice VII: pale blue (kept under the bloom threshold)
   ['#3a2a6e', '#5e6fc4'], // mantle: purple-blue
   ['#5a1406', '#ff7a2a'], // core: dark red -> glowing orange
 ];
@@ -112,10 +112,18 @@ export function createInteriorView({ planetView, rig, ui }) {
     const rMid = i === layers.length - 1 ? radii[4] * 0.35 : (radii[i] + radii[i + 1]) / 2;
     const e = THREE.MathUtils.degToRad(i < 2 ? 22 : i === 4 ? 0 : 16);
     const target = new THREE.Vector3(rMid * Math.cos(e), rMid * Math.sin(e), 0);
-    const dist = Math.max(0.11, Math.min(1.6, thick * 3.2));
-    // look at the first cut face from inside the wedge, slightly from above/outside
-    const off = new THREE.Vector3(0.28, 0.2, 1).normalize().multiplyScalar(dist);
-    return { position: toWorld(target.clone().add(off)), target: toWorld(target) };
+    if (i < 2) {
+      // thin outer layers: close up, from just outside the rim
+      const off = new THREE.Vector3(0.28, 0.2, 1).normalize().multiplyScalar(Math.max(0.11, thick * 3.2));
+      return { position: toWorld(target.clone().add(off)), target: toWorld(target) };
+    }
+    // deeper layers: from inside the wedge (55° round from the first cut face),
+    // never further out than 0.95 R so the camera stays inside the planet
+    const rc = Math.min(0.95, Math.hypot(rMid, thick * 3.2));
+    const phi = THREE.MathUtils.degToRad(55);
+    const ec = e + 0.15;
+    const cam = new THREE.Vector3(rc * Math.cos(phi) * Math.cos(ec), rc * Math.sin(ec), rc * Math.sin(phi) * Math.cos(ec));
+    return { position: toWorld(cam), target: toWorld(target) };
   }
 
   function depthForStep(step) {
@@ -129,7 +137,8 @@ export function createInteriorView({ planetView, rig, ui }) {
     state.step = step;
     // the glow shell would wash out the view from inside the planet
     gsap.to(planetView.materials.atmo.uniforms.uStrength, { value: step === 0 ? 0.5 : 0, duration: 0.8 });
-    gsap.to(planetView.materials.clouds.uniforms.uOpacity, { value: step === 0 ? 0.92 : 0.25, duration: 0.8 });
+    gsap.to(planetView.materials.clouds.uniforms.uOpacity, { value: step === 0 ? 0.6 : 0.2, duration: 0.8 });
+    gsap.to(planetView.materials.surface.uniforms.uDim, { value: step === 0 ? 0.7 : 0.3, duration: 0.8 });
     state.busy = true;
     sharedUniforms.uActive.value = step === 0 ? -1 : step - 1;
     labelObjs.forEach((lab, i) => lab.element.classList.toggle('is-active', i === step - 1));
@@ -175,6 +184,7 @@ export function createInteriorView({ planetView, rig, ui }) {
     gsap.to(sharedUniforms.uReveal, { value: 0, duration: 0.8, delay: fly ? 1.0 : 0.5 });
     gsap.to(planetView.materials.atmo.uniforms.uStrength, { value: 1.25, duration: 1.4 });
     gsap.to(planetView.materials.clouds.uniforms.uOpacity, { value: 0.92, duration: 1.0 });
+    gsap.to(planetView.materials.surface.uniforms.uDim, { value: 1, duration: 1.0 });
     const finish = () => {
       group.visible = false;
       state.theta = 0;

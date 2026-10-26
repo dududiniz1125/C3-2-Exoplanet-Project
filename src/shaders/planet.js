@@ -93,6 +93,7 @@ uniform vec3 uBeach;
 uniform vec3 uIce;
 uniform vec3 uNight;
 uniform vec3 uAtmo;
+uniform float uDim;       // < 1 while the planet is cut open
 varying vec2 vUv;
 varying vec3 vNormalW;
 varying vec3 vPosW;
@@ -139,7 +140,7 @@ void main() {
   float fres = pow(1.0 - max(dot(n, V), 0.0), 3.0);
   c += uAtmo * fres * (0.08 + 0.9 * smoothstep(-0.25, 0.5, ndl)) * 0.75;
 
-  gl_FragColor = vec4(c, 1.0);
+  gl_FragColor = vec4(c * uDim, 1.0);
 }
 `;
 

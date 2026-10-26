@@ -210,7 +210,9 @@ function updateShift() {
   const panel = state.view === 'interior' ? $('#layer-card') : $('#tools');
   const hasPanel = state.view !== 'intro' && (state.view === 'interior' || (tools[state.view] || []).length > 0);
   const portrait = w < 900 && window.innerHeight > w;
-  const px = hasPanel && !portrait ? Math.min(220, (panel.offsetWidth || 300) * 0.5) : 0;
+  // the interior also has the depth gauge on the left, so shift it less
+  const share = state.view === 'interior' ? 0.3 : 0.5;
+  const px = hasPanel && !portrait ? Math.min(220, (panel.offsetWidth || 300) * share) : 0;
   rig.setShift(px);
 }
 window.addEventListener('resize', updateShift);

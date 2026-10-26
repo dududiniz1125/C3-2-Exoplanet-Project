@@ -30,15 +30,14 @@ void main() {
   vec3 V = normalize(cameraPosition - vPosW);
   float mu = clamp(dot(normalize(vNormalW), V), 0.0, 1.0);
 
-  // Convection cells: two drifting Worley fields cross-faded over time
+  // Convection cells: one Worley field whose lookup is pushed around by
+  // slow noise, so the granules churn without a second (costly) lookup
   float t = uTime;
   float gran = 0.0;
   if (uDetail > 0.5) {
-    float w1 = worley(p * uGranScale + vec3(0.0, t * 0.03, t * 0.02));
-    float w2 = worley(p * uGranScale * 1.04 + vec3(5.2, -t * 0.025, 1.3));
-    float fade = 0.5 + 0.5 * sin(t * 0.35);
-    gran = 1.0 - mix(w1, w2, fade);
-    gran = smoothstep(0.15, 0.85, gran);
+    vec3 flow = vec3(snoise(p * 4.0 + vec3(t * 0.06)), snoise(p * 4.0 + vec3(7.1, t * 0.05, 2.3)), 0.0) * 0.35;
+    float w = worley(p * uGranScale + flow + vec3(0.0, t * 0.02, 0.0));
+    gran = smoothstep(0.15, 0.85, 1.0 - w);
   } else {
     gran = 0.5 + 0.5 * snoise(p * 9.0 + vec3(t * 0.05));
   }

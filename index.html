@@ -25,6 +25,9 @@
   <body>
     <canvas id="scene" aria-label="3D view of the C3-2 system"></canvas>
     <div id="labels"></div>
+    <div class="loading" id="loading" style="position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:#05060f;color:rgba(232,236,255,.66);font:500 14px/1 system-ui,sans-serif;letter-spacing:.2em">
+      <span>BUILDING C3-2…</span>
+    </div>
 
     <div id="ui" class="view-intro">
       <header class="topbar">
@@ -101,7 +104,6 @@
         </article>
       </div>
 
-      <div class="loading" id="loading"><span>Building C3-2…</span></div>
     </div>
 
     <noscript>C3-2 Explorer needs JavaScript and WebGL.</noscript>
