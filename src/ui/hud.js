@@ -155,8 +155,8 @@ export function createHUD({ onNav, onLearnMore, onRate, onSettings }) {
       slider.value = String(rateToSlider(rate));
       out.textContent = formatRate(rate);
     },
-    setDate(text) {
-      dateEl.textContent = text;
+    setDate(text, season = '') {
+      dateEl.innerHTML = season ? `${text}<span class="sim-season"> · ${season}</span>` : text;
     },
     setNote(text) {
       noteEl.textContent = text;

@@ -41,12 +41,12 @@ const planetTexture = bakePlanetTexture(gfx.renderer, smallScreen ? { width: 102
 // Colours derived from temperature (exaggerated saturation for the star discs)
 const starColor = blackbodyColor(STAR.temperature_K, 2.2);
 const starLimbColor = blackbodyColor(STAR.temperature_K - 1200, 2.2);
-const lightColor = blackbodyColor(STAR.temperature_K, 1.35);
+const lightColor = blackbodyColor(STAR.temperature_K, 1.1);
 const sunColor = blackbodyColor(SOLAR.sunTemperature_K, 1.8);
 const sunLimbColor = blackbodyColor(SOLAR.sunTemperature_K - 1200, 1.8);
 
 const views = {
-  system: createSystemView({ scene, planetTexture, glowTexture, starColor, starLimbColor, lightColor }),
+  system: createSystemView({ scene, planetTexture, glowTexture, starColor, starLimbColor, lightColor, rig }),
   planet: createPlanetView({ scene, planetTexture, lightColor, rig }),
   star: createStarView({ scene, glowTexture, starColor, starLimbColor, sunColor, sunLimbColor, rig }),
 };
@@ -106,14 +106,22 @@ const tools = {
       const on = !views.system.solarCompare;
       views.system.setSolarCompare(on);
       compareBtn.classList.toggle('is-on', on);
-      hud.setNote(on ? 'Dashed: Mercury, Venus, Earth · green: Sun’s habitable zone' : VIEW_TEXT.system.note);
+      legend.hidden = !on;
       const p = views.system.pose(on);
       rig.flyTo(p.position, p.target, { duration: 1.6 });
     });
+    const legend = document.createElement('div');
+    legend.className = 'legend';
+    legend.hidden = true;
+    legend.innerHTML = `
+      <span><i class="lg-dash"></i>Mercury, Venus, Earth orbits</span>
+      <span><i class="lg-band" style="background:#9be27f"></i>Sun’s habitable zone (${SOLAR.hzText})</span>
+      <span><i class="lg-band" style="background:#4fd1c5"></i>C3-2’s habitable zone (${ORBIT.hzText})</span>`;
     return [
       title('SYSTEM VIEW'),
       toggle('Habitable Zone', true, (v) => views.system.setHabitableZone(v), { swatch: '#4fd1c5' }),
       compareBtn,
+      legend,
     ];
   })(),
   planet: (() => {
@@ -325,8 +333,7 @@ function frame(now) {
   if (uiTimer <= 0) {
     uiTimer = 0.2;
     const day = Math.floor((clock.time / DAY) % ORBIT.period_days) + 1;
-    const extra = state.view === 'planet' ? ` · ${seasonText(clock.time)}` : '';
-    hud.setDate(`Day ${day} of ${ORBIT.period_days}${extra}`);
+    hud.setDate(`Day ${day} of ${ORBIT.period_days}`, state.view === 'planet' ? seasonText(clock.time) : '');
   }
 
   gfx.watch(dt, () => {

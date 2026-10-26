@@ -26,11 +26,11 @@ npm run build      # static site in dist/
 npm run preview    # serve dist/ locally to check the build
 ```
 
-`dist/` uses relative paths, so it can be uploaded to any static host
-(GitHub Pages, Netlify, a school web server, a sub-folder, …). Browsers block
-ES modules on `file://`, so to open the build from your disk use
-`npm run preview` (or any local web server) rather than double-clicking
-`index.html`.
+`dist/` is a plain static site with relative paths and a single classic
+script, so you can upload it to any static host (GitHub Pages, Netlify, a
+school web server, a sub-folder, …) or just double-click `dist/index.html` to
+open it from disk. The fonts come from Google Fonts, so without internet the
+page falls back to system fonts.
 
 ## What's inside
 

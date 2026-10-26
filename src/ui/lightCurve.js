@@ -3,8 +3,8 @@ import { LIGHT_CURVE, ORBIT, PLANET } from '../data/c32.js';
 // Animated transit light curve (Learn more drawer, Planet view): relative
 // intensity vs time over one Earth year, with a synced mini view of C3-2
 // crossing its star's disc during each dip.
-const HALF_WIDTH = 1.6; // days; dips are drawn wider than real so they are visible
-const INGRESS = 0.5;
+const HALF_WIDTH = 4; // days; dips are drawn wider than real so they are visible
+const INGRESS = 1.4;
 
 function seeded(seed) {
   let s = seed;
@@ -19,7 +19,7 @@ export function createLightCurve() {
   root.className = 'lightcurve';
   root.innerHTML = `
     <div class="lightcurve-row">
-      <canvas class="lc-chart" height="170" aria-label="Transit light curve"></canvas>
+      <canvas class="lc-chart" height="190" aria-label="Transit light curve: relative intensity against time"></canvas>
       <canvas class="lc-disc" width="84" height="84" aria-hidden="true"></canvas>
     </div>
     <p class="lc-caption">${LIGHT_CURVE.caption}</p>
@@ -58,7 +58,7 @@ export function createLightCurve() {
   let last = 0;
   let ctx;
   let W = 0;
-  let H = 170;
+  let H = 190;
 
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -69,7 +69,7 @@ export function createLightCurve() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  const m = { l: 54, r: 8, t: 10, b: 24 };
+  const m = { l: 54, r: 10, t: 22, b: 34 };
   const X = (t) => m.l + ((t - xMin) / (xMax - xMin)) * (W - m.l - m.r);
   const Y = (f) => m.t + ((yMax - f) / (yMax - yMin)) * (H - m.t - m.b);
 
@@ -95,8 +95,10 @@ export function createLightCurve() {
     for (const d of [0, 100, 200, 300, 365]) {
       ctx.fillText(`${d}`, X(d), H - m.b + 6);
     }
-    ctx.textAlign = 'right';
-    ctx.fillText('days', W - m.r, H - m.b + 6);
+    ctx.textAlign = 'center';
+    ctx.fillText('Time (days)', m.l + (W - m.l - m.r) / 2, H - 13);
+    ctx.textAlign = 'left';
+    ctx.fillText('Relative intensity', 4, 3);
     // 99.880% guide
     ctx.setLineDash([3, 4]);
     ctx.strokeStyle = 'rgba(255,154,60,0.45)';

@@ -47,7 +47,7 @@ function circleLine(radius, color, opacity, dashed = false) {
   return line;
 }
 
-export function createSystemView({ scene, planetTexture, glowTexture, starColor, starLimbColor, lightColor }) {
+export function createSystemView({ scene, planetTexture, glowTexture, starColor, starLimbColor, lightColor, rig }) {
   const group = new THREE.Group();
   group.name = 'system-stage';
   scene.add(group);
@@ -57,7 +57,7 @@ export function createSystemView({ scene, planetTexture, glowTexture, starColor,
     uColor: { value: starColor.clone() },
     uLimbColor: { value: starLimbColor.clone() },
     uTime: { value: 0 },
-    uIntensity: { value: 1.0 },
+    uIntensity: { value: 1.3 },
     uGranScale: { value: 14 },
     uDetail: { value: 0 },
   };
@@ -71,12 +71,12 @@ export function createSystemView({ scene, planetTexture, glowTexture, starColor,
       map: glowTexture,
       color: starColor,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.55,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     }),
   );
-  glow.scale.setScalar(STAR_SIZE * 11);
+  glow.scale.setScalar(STAR_SIZE * 8);
   group.add(glow);
   const starLabel = makeLabel(STAR.name, { className: 'label-star' });
   starLabel.position.set(STAR_SIZE * 1.3, STAR_SIZE * 1.1, 0);
@@ -131,13 +131,14 @@ export function createSystemView({ scene, planetTexture, glowTexture, starColor,
     const line = circleLine(o.au * AU, 0xbfd0ff, 0.6, true);
     solar.add(line);
     const l = makeLabel(o.name, { className: 'label-solar', sub: `${o.au} AU` });
-    l.position.set(o.au * AU * Math.cos(2.2), 0, o.au * AU * Math.sin(2.2));
+    // labels on the far side of each orbit, clear of the bottom UI
+    l.position.set(o.au * AU * Math.cos(-2.2), 0, o.au * AU * Math.sin(-2.2));
     solar.add(l);
   }
-  const sunHz = ring(SOLAR.hz_AU[0] * AU, SOLAR.hz_AU[1] * AU, '#9be27f', 0.12);
+  const sunHz = ring(SOLAR.hz_AU[0] * AU, SOLAR.hz_AU[1] * AU, '#9be27f', 0.035);
   solar.add(sunHz);
   const sunHzLabel = makeLabel('Sun’s habitable zone', { className: 'label-solar-hz', sub: SOLAR.hzText });
-  sunHzLabel.position.set(SOLAR.hz_AU[1] * AU * Math.cos(0.9), 0, SOLAR.hz_AU[1] * AU * Math.sin(0.9));
+  sunHzLabel.position.set(SOLAR.hz_AU[1] * AU * Math.cos(-0.75), 0, SOLAR.hz_AU[1] * AU * Math.sin(-0.75));
   solar.add(sunHzLabel);
   group.add(solar);
 
@@ -157,10 +158,14 @@ export function createSystemView({ scene, planetTexture, glowTexture, starColor,
     mats.light.value.copy(tmp);
   }
 
+  // Frame the habitable zone (or Earth's orbit when comparing), seen from
+  // about 35° above the orbital plane
   function pose(compare = false) {
     const target = new THREE.Vector3(0, 0, 0);
-    if (compare) return { position: new THREE.Vector3(0, 175, 170), target };
-    return { position: new THREE.Vector3(18, 52, 92), target };
+    const radius = compare ? SOLAR.hz_AU[1] * AU : ORBIT.hz_AU[1] * AU;
+    const d = rig.fitDistance(radius, 1.3);
+    const dir = new THREE.Vector3(0.15, compare ? 1.0 : 0.85, 1).normalize();
+    return { position: dir.multiplyScalar(d), target };
   }
 
   return {
@@ -177,6 +182,6 @@ export function createSystemView({ scene, planetTexture, glowTexture, starColor,
     get solarCompare() {
       return solar.visible;
     },
-    controlsLimits: { minDistance: 12, maxDistance: 420, enablePan: true },
+    controlsLimits: { minDistance: 12, maxDistance: 900, enablePan: true },
   };
 }

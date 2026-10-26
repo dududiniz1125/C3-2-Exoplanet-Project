@@ -82,7 +82,7 @@ export function createInteriorUI({ root, gauge, card, body, nav }, { onBack, onP
       const d = Math.round(km / 10) * 10;
       value.textContent = `Depth: ${d.toLocaleString('en-US')} km`;
       marker.style.top = `${(km / R) * 100}%`;
-      pressure.innerHTML = `Pressure: <b>${layer ? layer.pressure : 'Low: 1.5 atm at the surface'}</b>`;
+      pressure.innerHTML = `Pressure: <b>${(layer || layers[0]).pressure}</b>`;
     },
   };
 }

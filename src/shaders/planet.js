@@ -35,17 +35,18 @@ void main() {
   vec3 dir = vec3(-cos(phi) * sin(theta), cos(theta), sin(phi) * sin(theta));
   vec3 s = vec3(uSeed, uSeed * 1.7, uSeed * 0.3);
 
-  // Island chains: thin bands where a low-frequency field crosses zero,
-  // broken into separate islands by higher-frequency noise.
+  // Island chains: small round islands (Worley blobs) strung along the
+  // thin bands where a low-frequency noise field crosses zero.
   float chain = snoise(dir * 1.25 + s);
   float chain2 = snoise(dir * 1.9 + s * 2.1 + 5.0);
-  float band = max(1.0 - smoothstep(0.0, 0.1, abs(chain)),
-                   0.7 * (1.0 - smoothstep(0.0, 0.07, abs(chain2))));
-  float breakup = fbm(dir * 7.0 + s, 4);
-  float land = band * smoothstep(0.05, 0.35, breakup + 0.12);
-  float halo = max(1.0 - smoothstep(0.0, 0.2, abs(chain)),
-                   0.6 * (1.0 - smoothstep(0.0, 0.14, abs(chain2))));
-  halo *= smoothstep(-0.25, 0.3, breakup);
+  float band = max(1.0 - smoothstep(0.0, 0.07, abs(chain)),
+                   0.8 * (1.0 - smoothstep(0.0, 0.05, abs(chain2))));
+  float blobs = 1.0 - worley(dir * 26.0 + s);
+  float size = 0.5 + 0.5 * snoise(dir * 6.0 + s);
+  float land = band * smoothstep(0.62 - 0.12 * size, 0.78 - 0.12 * size, blobs);
+  float halo = max(1.0 - smoothstep(0.0, 0.16, abs(chain)),
+                   0.7 * (1.0 - smoothstep(0.0, 0.12, abs(chain2))));
+  halo *= smoothstep(0.35, 0.75, blobs) * 0.9;
 
   // Clouds: domain-warped fbm with weak zonal banding
   // stretched east-west (like weather bands) and domain-warped into swirls
@@ -124,8 +125,8 @@ void main() {
   vec3 lit = col * uLightColor * (0.06 + 1.05 * max(ndl, 0.0));
 
   vec3 H = normalize(L + V);
-  float spec = pow(max(dot(n, H), 0.0), 70.0) * (1.0 - land) * (1.0 - ice) * step(0.0, ndl);
-  lit += uLightColor * spec * 0.45;
+  float spec = pow(max(dot(n, H), 0.0), 140.0) * (1.0 - land) * (1.0 - ice) * step(0.0, ndl);
+  lit += uLightColor * spec * 0.35;
 
   vec3 night = col * uNight;
   vec3 c = mix(night, lit, day);

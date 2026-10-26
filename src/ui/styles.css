@@ -210,6 +210,7 @@ button {
 }
 .btn-ghost {
   background: transparent;
+  white-space: nowrap;
 }
 .btn-icon {
   padding: 0;
@@ -503,6 +504,31 @@ button {
   font-weight: 600;
 }
 
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 2px 4px;
+}
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend i {
+  width: 18px;
+  flex: none;
+}
+.lg-dash {
+  border-top: 2px dashed #bfd0ff;
+}
+.lg-band {
+  height: 8px;
+  border-radius: 2px;
+  opacity: 0.7;
+}
 .info-list {
   margin: 0;
   display: grid;
@@ -1323,6 +1349,16 @@ input[type='range']::-moz-range-thumb {
   .gauge,
   .layer-card {
     bottom: calc(var(--gutter) * 0.8 + var(--safe-b) + 290px);
+  }
+}
+
+@media (max-width: 1000px) {
+  .sim-season {
+    display: none;
+  }
+  .rate output,
+  .sim-date {
+    min-width: 0;
   }
 }
 
