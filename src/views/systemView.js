@@ -57,7 +57,7 @@ export function createSystemView({ scene, planetTexture, glowTexture, starColor,
     uColor: { value: starColor.clone() },
     uLimbColor: { value: starLimbColor.clone() },
     uTime: { value: 0 },
-    uIntensity: { value: 1.3 },
+    uIntensity: { value: 1.45 },
     uGranScale: { value: 14 },
     uDetail: { value: 0 },
   };

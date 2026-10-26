@@ -121,7 +121,11 @@ button {
   padding: 3px 8px 3px 6px;
   border-radius: 999px;
   background: rgba(5, 6, 15, 0.55);
-  transition: background 0.3s, color 0.3s, transform 0.3s;
+  transition: background 0.3s, color 0.3s, transform 0.3s, opacity 0.35s;
+}
+.label-layer.is-hidden,
+.label-layer.is-crowded {
+  opacity: 0;
 }
 .label-layer.is-active {
   background: var(--teal);
@@ -659,15 +663,21 @@ button {
 .bar {
   grid-area: bar;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 6px;
   padding: 6px;
-  border-radius: 999px;
+  border-radius: 28px;
+  min-width: 0;
+  max-width: 100%;
   transition: opacity 0.5s;
 }
 .rate {
   display: flex;
   align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
   gap: 10px;
   padding: 0 10px 0 14px;
   border-right: 1px solid var(--panel-border);
@@ -936,12 +946,14 @@ input[type='range']::-moz-range-thumb {
 /* ---------- habitability panel ---------- */
 .habit {
   position: absolute;
-  top: 50%;
+  top: calc(16px + var(--safe-t));
   left: 50%;
   width: min(760px, calc(100vw - 24px));
-  max-height: calc(100dvh - 40px);
+  max-height: calc(100% - 32px - var(--safe-t) - var(--safe-b));
   overflow-y: auto;
-  transform: translate(-50%, -46%) scale(0.98);
+  -webkit-overflow-scrolling: touch;
+  padding-top: 34px !important;
+  transform: translate(-50%, 12px) scale(0.98);
   opacity: 0;
   pointer-events: none !important;
   transition: opacity 0.35s, transform 0.35s;
@@ -954,7 +966,7 @@ input[type='range']::-moz-range-thumb {
 }
 .habit.is-open {
   opacity: 1;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
   pointer-events: auto !important;
 }
 .habit.is-open * {
@@ -1101,8 +1113,7 @@ input[type='range']::-moz-range-thumb {
 .gauge {
   position: absolute;
   left: var(--gutter);
-  top: 50%;
-  transform: translateY(-50%);
+  top: calc(var(--gutter) * 0.6 + var(--safe-t) + 104px);
   width: 150px;
   padding: 14px;
   display: flex;
@@ -1279,7 +1290,7 @@ input[type='range']::-moz-range-thumb {
 }
 
 /* ---------- responsive ---------- */
-@media (max-width: 1180px) {
+@media (max-width: 1440px) {
   .bottom {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -1331,9 +1342,7 @@ input[type='range']::-moz-range-thumb {
     height: 64px;
   }
   .gauge {
-    top: auto;
-    bottom: calc(var(--gutter) * 0.8 + var(--safe-b) + 280px);
-    transform: none;
+    top: calc(var(--gutter) * 0.6 + var(--safe-t) + 150px);
     width: 140px;
   }
   .gauge-track {
@@ -1352,9 +1361,28 @@ input[type='range']::-moz-range-thumb {
 
 /* portrait tablets: lots of height, little width */
 @media (max-width: 900px) and (orientation: portrait) {
-  .gauge,
   .layer-card {
     bottom: calc(var(--gutter) * 0.8 + var(--safe-b) + 290px);
+  }
+}
+
+/* short screens (iPad landscape): keep the gauge compact above the title */
+@media (max-height: 900px) {
+  .gauge-track {
+    height: 130px;
+  }
+  .gauge {
+    gap: 7px;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 1440px) {
+  .sim-season {
+    display: none;
+  }
+  input[type='range'] {
+    width: 130px;
   }
 }
 

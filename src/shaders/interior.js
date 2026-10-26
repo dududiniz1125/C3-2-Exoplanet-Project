@@ -1,6 +1,8 @@
-// Cut faces of the sliced planet. One half-disc mesh per face; the fragment
-// shader works out which layer a pixel belongs to from its radius, so the
-// layer boundaries come straight from data/c32.js (passed in as uR).
+// Cut face of the sliced planet: a disc lying in the cutting plane. The
+// fragment shader works out which layer a pixel belongs to from its true 3D
+// distance to the centre (disc radius + plane offset), so the layer
+// boundaries come straight from data/c32.js (passed in as uR) and are exact
+// circles for any position of the plane.
 import { noiseGLSL } from './noise.js';
 
 export const interiorVertex = /* glsl */ `
@@ -19,6 +21,7 @@ uniform float uActive;    // highlighted layer index, -1 = none
 uniform float uTime;
 uniform float uShade;
 uniform float uReveal;
+uniform float uOffset;    // distance of the cutting plane from the centre
 varying vec2 vP;
 ${noiseGLSL}
 
@@ -28,7 +31,7 @@ float boundaryLine(float r, float b) {
 }
 
 void main() {
-  float r = length(vP);
+  float r = sqrt(dot(vP, vP) + uOffset * uOffset);
   if (r > uR[0]) discard;
   float ang = atan(vP.y, vP.x);
 

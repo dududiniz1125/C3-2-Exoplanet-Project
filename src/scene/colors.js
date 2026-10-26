@@ -26,6 +26,20 @@ export function blackbodyColor(T, saturation = 1) {
   return color;
 }
 
+// Colours used to *draw* the stars. A black-body curve gives a 4300 K star a
+// pale peach and the Sun almost pure white on screen, which hides the very
+// difference the Star view is about, so each temperature gets a display
+// colour that reads clearly as its colour class: K6V orange, G2V
+// yellow-white. `limb` is the darker, redder edge colour.
+const STAR_DISPLAY = [
+  { T: 4300, core: '#ff7a18', limb: '#b83a06' },
+  { T: 5778, core: '#fff1c2', limb: '#ffb44a' },
+];
+export function starDisplayColors(T) {
+  const best = STAR_DISPLAY.reduce((a, b) => (Math.abs(b.T - T) < Math.abs(a.T - T) ? b : a));
+  return { core: new THREE.Color(best.core), limb: new THREE.Color(best.limb), coreHex: best.core };
+}
+
 export const PALETTE = {
   bg: '#05060f',
   teal: '#4fd1c5',

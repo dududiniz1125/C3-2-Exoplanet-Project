@@ -72,7 +72,7 @@ export function createStarView({ scene, glowTexture, starColor, starLimbColor, s
   group.position.copy(STAR_STAGE);
   scene.add(group);
 
-  const star = makeStar({ color: starColor, limbColor: starLimbColor, radius: 1, glowTexture, intensity: 0.92 });
+  const star = makeStar({ color: starColor, limbColor: starLimbColor, radius: 1, glowTexture, intensity: 1.35 });
   group.add(star.group);
   const starLabel = makeLabel(STAR.name, { className: 'label-compare', sub: `${STAR.radius_Rsun} R☉ · ${STAR.temperatureText}` });
   starLabel.center.set(0.5, 0);
@@ -80,7 +80,7 @@ export function createStarView({ scene, glowTexture, starColor, starLimbColor, s
   starLabel.visible = false;
   group.add(starLabel);
 
-  const sun = makeStar({ color: sunColor, limbColor: sunLimbColor, radius: SUN_RADIUS, glowTexture, intensity: 0.92 });
+  const sun = makeStar({ color: sunColor, limbColor: sunLimbColor, radius: SUN_RADIUS, glowTexture, intensity: 0.98 });
   sun.group.visible = false;
   group.add(sun.group);
   const sunLabel = makeLabel('Sun', { className: 'label-compare', sub: `1 R☉ · ${SOLAR.sunTemperatureText}` });

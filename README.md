@@ -40,7 +40,7 @@ page falls back to system fonts.
 | **System** | Orbit drawn with e = 0.03 (star at a focus), habitable-zone band toggle, RATE slider (1 sec/sec to 30 days/sec) with a "Day N of 105" counter, "Compare to our Solar System" overlay (Mercury, Venus, Earth orbits and the Sun's habitable zone) |
 | **Planet** | Ocean world with island chains, seasonal polar ice caps, drifting clouds, orange-tinted atmosphere glow, day/night terminator, spin of 26.5 h around a 25.8° axis (axis toggle), "Compare size" with Earth, Mars and Neptune |
 | **Star** | Animated granulation, limb darkening, star spots and corona, "Compare to Sun" (1 R☉ vs 0.56 R☉, 5778 K vs 4300 K colours) |
-| **Inside** | Zoom right into the planet (or press "Inside C3-2"): a 90° wedge is cut away and you scroll, swipe or use the arrows to travel through five hypothetical layers with a depth gauge |
+| **Inside** | Zoom right into the planet (or press "Inside C3-2"): the planet is sliced through its centre, revealing five concentric hypothetical layers, and you scroll, swipe or use the arrows to travel through them with a depth gauge |
 | **Habitability** | "Could you live here?" scorecard, verdict, human adaptations and a hypothetical "Meet the locals" card |
 
 Also: "Learn more +" drawer with a data table for every view (value, unit and
@@ -160,9 +160,10 @@ numbers.
 - **Light curve:** the dips are drawn wider than a real transit (a few hours)
   so they are visible on a 365-day axis. Their depth (99.880%) and spacing
   (every 105 days, starting around day 7) are exact.
-- **Colours:** star colours come from a black-body approximation for 4300 K
-  and 5778 K, with the saturation boosted slightly so the difference is easy to
-  see.
+- **Colours:** the star discs use display colours chosen to read clearly as
+  their colour class (orange for the 4300 K K6V star, yellow-white for the
+  5778 K Sun), because a pure black-body colour looks almost white on screen.
+  The light falling on C3-2 uses the black-body colour of 4300 K.
 
 Anything imagined (interior, surface temperature with greenhouse, life) is
 labelled **Hypothetical** in the app.

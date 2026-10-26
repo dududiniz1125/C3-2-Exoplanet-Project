@@ -45,7 +45,7 @@ export function createInteriorUI({ root, gauge, card, body, nav }, { onBack, onP
       return `<span class="step">CUTAWAY</span>
         <h3>Inside C3-2</h3>
         <p><span class="hypo-tag">${INTERIOR.label}</span></p>
-        <p>A quarter of the planet has been sliced away to show five layers, from the thin atmosphere down to a small core.</p>
+        <p>The planet has been sliced through its centre to show five layers, from the thin atmosphere down to a small core.</p>
         <p class="look">Scroll, swipe or use the arrows to travel inward.</p>`;
     }
     return `<span class="step">LAYER ${step} OF ${layers.length}</span>

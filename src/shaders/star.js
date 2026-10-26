@@ -42,13 +42,16 @@ void main() {
     gran = 0.5 + 0.5 * snoise(p * 9.0 + vec3(t * 0.05));
   }
   float big = fbm(p * 2.5 + vec3(0.0, t * 0.015, 0.0), 4);
-  float spots = smoothstep(0.62, 0.72, snoise(p * 2.1 + vec3(11.0, 3.0, t * 0.004)));
+  // a few small, soft star spots (rare peaks of a higher-frequency field)
+  float spotField = snoise(p * 3.4 + vec3(11.0, 3.0, t * 0.004)) * 0.6 + snoise(p * 7.0 + 4.0) * 0.4;
+  float spots = smoothstep(0.62, 0.82, spotField);
 
-  // Limb darkening: I(mu) = 1 - u(1 - mu), stronger for cool K stars
-  float limb = 1.0 - 0.72 * (1.0 - pow(mu, 0.9));
-  vec3 base = mix(uLimbColor, uColor, smoothstep(0.0, 0.8, mu));
-  vec3 col = base * (0.72 + 0.42 * gran + 0.25 * big) * limb;
-  col *= 1.0 - 0.65 * spots;
+  // Emissive surface: bright everywhere, gentle granulation, and limb
+  // darkening that shifts towards the deeper limb colour instead of grey
+  float limb = 1.0 - 0.38 * (1.0 - pow(mu, 0.7));
+  vec3 base = mix(uLimbColor, uColor, smoothstep(0.0, 0.75, mu));
+  vec3 col = base * (0.94 + 0.12 * (gran - 0.5) + 0.06 * big) * limb;
+  col *= 1.0 - 0.3 * spots;
   gl_FragColor = vec4(col * uIntensity, 1.0);
 }
 `;

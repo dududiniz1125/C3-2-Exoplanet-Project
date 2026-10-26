@@ -5,7 +5,7 @@ import { createRenderer } from './scene/renderer.js';
 import { createCameraRig } from './scene/cameraRig.js';
 import { createStarfield } from './scene/starfield.js';
 import { makeGlowTexture, bakePlanetTexture } from './scene/textures.js';
-import { blackbodyColor } from './scene/colors.js';
+import { blackbodyColor, starDisplayColors } from './scene/colors.js';
 import { SimClock, DAY, HOUR } from './scene/clock.js';
 import { orbitState } from './scene/orbit.js';
 import { createSystemView } from './views/systemView.js';
@@ -38,12 +38,15 @@ const smallScreen = Math.min(window.innerWidth, window.innerHeight) < 900;
 const glowTexture = makeGlowTexture();
 const planetTexture = bakePlanetTexture(gfx.renderer, smallScreen ? { width: 1024, height: 512 } : {});
 
-// Colours derived from temperature (exaggerated saturation for the star discs)
-const starColor = blackbodyColor(STAR.temperature_K, 2.2);
-const starLimbColor = blackbodyColor(STAR.temperature_K - 1200, 2.2);
+// Star discs use clear display colours (orange K6V, yellow-white Sun); the
+// light falling on the planet uses the black-body colour of 4300 K
+const starDisplay = starDisplayColors(STAR.temperature_K);
+const sunDisplay = starDisplayColors(SOLAR.sunTemperature_K);
+const starColor = starDisplay.core;
+const starLimbColor = starDisplay.limb;
+const sunColor = sunDisplay.core;
+const sunLimbColor = sunDisplay.limb;
 const lightColor = blackbodyColor(STAR.temperature_K, 1.1);
-const sunColor = blackbodyColor(SOLAR.sunTemperature_K, 1.8);
-const sunLimbColor = blackbodyColor(SOLAR.sunTemperature_K - 1200, 1.8);
 
 const views = {
   system: createSystemView({ scene, planetTexture, glowTexture, starColor, starLimbColor, lightColor, rig }),
@@ -149,8 +152,8 @@ const tools = {
     chips.className = 'temp-compare';
     chips.hidden = true;
     chips.innerHTML = `
-      <div class="temp-chip" style="background:#${starColor.getHexString(THREE.SRGBColorSpace)}">${STAR.spectralClass}<small>${STAR.temperatureText} · ${STAR.radius_Rsun} R☉</small></div>
-      <div class="temp-chip" style="background:#${sunColor.getHexString(THREE.SRGBColorSpace)}">Sun<small>${SOLAR.sunTemperatureText} · 1 R☉</small></div>`;
+      <div class="temp-chip" style="background:${starDisplay.coreHex}">${STAR.spectralClass}<small>${STAR.temperatureText} · ${STAR.radius_Rsun} R☉</small></div>
+      <div class="temp-chip" style="background:${sunDisplay.coreHex}">Sun<small>${SOLAR.sunTemperatureText} · 1 R☉</small></div>`;
     const t = toggle('Compare to Sun', false, (on) => {
       chips.hidden = !on;
       const p = views.star.setCompare(on);
@@ -323,7 +326,7 @@ function frame(now) {
   if (views.system.group.visible) views.system.update(clock.time, realTime);
   // the planet's light direction also sets up Planet-view camera poses
   views.planet.update(clock.time, dtSim);
-  if (views.planet.group.visible) interior.update(realTime);
+  if (views.planet.group.visible) interior.update(realTime, dt);
   if (views.star.group.visible) views.star.update(clock.time, realTime);
   rig.update();
 

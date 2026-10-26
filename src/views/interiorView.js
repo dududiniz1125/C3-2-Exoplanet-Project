@@ -5,15 +5,16 @@ import { interiorVertex, interiorFragment } from '../shaders/interior.js';
 import { makeLabel } from '../scene/labels.js';
 import { PLANET_STAGE } from './planetView.js';
 
-// Interior view: a ~90° wedge is cut out of C3-2 (like a sliced orange) and
-// the story steps from the atmosphere down to the core.
+// Interior view: C3-2 is sliced through its centre and the story steps from
+// the atmosphere down to the core.
 //
-// How the cut works: two clipping planes through the planet's centre, with
-// clipIntersection = true, remove only the region on the "wrong" side of
-// both, i.e. the wedge between angle 0 and angle θ around the vertical axis.
-// The flat faces of the cut are two half-discs drawn with interior.js, which
-// colours each pixel by the layer its radius falls in.
-const WEDGE = Math.PI / 2;
+// How the cut works: one clipping plane faces the camera and removes the
+// near half of the planet. The reveal slides that plane from the front
+// surface in to the centre, like a knife going through an orange. The cut
+// face is a disc in the same plane (interior.js colours it by true 3D
+// radius), and the camera always looks at it square-on, so every layer
+// boundary is a perfect circle, at every step and during the animation.
+const OFFSET_HIDDEN = 1.2; // plane beyond the atmosphere glow: nothing clipped
 
 const LAYER_COLORS = [
   ['#f0b98a', '#f7dcc4'], // atmosphere: orange-white
@@ -23,8 +24,12 @@ const LAYER_COLORS = [
   ['#5a1406', '#ff7a2a'], // core: dark red -> glowing orange
 ];
 
-// Where each layer label sits on the first cut face (elevation in degrees)
-const LABEL_ELEVATION = [60, 46, 30, 12, -8];
+// Where each layer's label and close-up sit on the cut face: angle around
+// the disc (degrees, 0 = right, 90 = up). The labels are centred pills inside
+// the disc, spread round it so they never meet and never reach the side panels.
+const LABEL_ANGLE = [50, 130, -60, 225, 0];
+// Camera distance from the face for each layer's close-up (planet radii)
+const CLOSE_UP = [0.13, 0.18, 0.75, 1.3, 0.95];
 
 export function createInteriorView({ planetView, rig, ui }) {
   const R = PLANET.radius_km;
@@ -35,95 +40,80 @@ export function createInteriorView({ planetView, rig, ui }) {
   group.visible = false;
   planetView.group.add(group);
 
-  const sharedUniforms = {
+  const uniforms = {
     uR: { value: radii },
     uColA: { value: LAYER_COLORS.map((c) => new THREE.Color(c[0])) },
     uColB: { value: LAYER_COLORS.map((c) => new THREE.Color(c[1])) },
     uActive: { value: -1 },
     uTime: { value: 0 },
     uReveal: { value: 0 },
+    uOffset: { value: OFFSET_HIDDEN },
+    uShade: { value: 1 },
   };
-  const faceMaterial = (shade) =>
+  const face = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 256),
     new THREE.ShaderMaterial({
       vertexShader: interiorVertex,
       fragmentShader: interiorFragment,
-      uniforms: { ...sharedUniforms, uShade: { value: shade } },
+      uniforms,
       side: THREE.DoubleSide,
       transparent: true,
-    });
-  const faceGeo = new THREE.CircleGeometry(1, 192, -Math.PI / 2, Math.PI); // half-disc, x >= 0
-  const faceA = new THREE.Mesh(faceGeo, faceMaterial(1.0));
-  const faceB = new THREE.Mesh(faceGeo, faceMaterial(0.78));
-  faceA.renderOrder = 1;
-  faceB.renderOrder = 1;
-  group.add(faceA, faceB);
+    }),
+  );
+  face.renderOrder = 1;
+  group.add(face);
 
-  // Layer labels
+  // Point on the cut face for layer i (local coordinates, z = 0)
+  function layerPoint(i) {
+    // the core label sits at the centre; the mantle's halfway down its band
+    const rMid = i === layers.length - 1 ? 0 : (radii[i] + radii[i + 1]) / 2;
+    const a = THREE.MathUtils.degToRad(LABEL_ANGLE[i]);
+    return new THREE.Vector3(rMid * Math.cos(a), rMid * Math.sin(a), 0);
+  }
+
   const labelObjs = layers.map((l, i) => {
-    const rMid = i === layers.length - 1 ? radii[4] * 0.45 : (radii[i] + radii[i + 1]) / 2;
-    const e = THREE.MathUtils.degToRad(LABEL_ELEVATION[i]);
     const label = makeLabel(l.name.replace(/ \(.*\)$/, ''), { className: 'label-layer' });
-    label.position.set(rMid * Math.cos(e), rMid * Math.sin(e), 0.002);
-    label.userData = { rMid, e };
+    label.center.set(0.5, 0.5);
+    label.position.copy(layerPoint(i)).setZ(0.003);
+    label.element.classList.add('is-hidden');
     group.add(label);
     return label;
   });
 
-  // Clipping planes (world space, updated each frame)
-  const planeA = new THREE.Plane();
-  const planeB = new THREE.Plane();
-  const planes = [planeA, planeB];
+  // One clipping plane shared by the surface, clouds and atmosphere
+  const plane = new THREE.Plane();
   for (const m of planetView.clippable) {
-    m.clippingPlanes = planes;
-    m.clipIntersection = true;
+    m.clippingPlanes = [plane];
+    m.clipIntersection = false;
     m.clipping = true;
     m.needsUpdate = true;
   }
 
-  const state = { theta: 0, active: false, step: 0, busy: false, depth: 0 };
-  const q = new THREE.Quaternion();
-  const n = new THREE.Vector3();
+  const state = { offset: OFFSET_HIDDEN, active: false, step: 0, busy: false, depth: 0 };
+  const u = new THREE.Vector3();
   const center = new THREE.Vector3();
+  const q = new THREE.Quaternion();
 
-  function updatePlanes() {
+  function updatePlane() {
     group.updateWorldMatrix(true, false);
-    group.getWorldQuaternion(q);
     group.getWorldPosition(center);
-    n.set(0, 0, -1).applyQuaternion(q);
-    planeA.setFromNormalAndCoplanarPoint(n, center);
-    n.set(-Math.sin(state.theta), 0, Math.cos(state.theta)).applyQuaternion(q);
-    planeB.setFromNormalAndCoplanarPoint(n, center);
-    faceB.rotation.y = -state.theta;
+    u.set(0, 0, 1).applyQuaternion(group.getWorldQuaternion(q));
+    // keep the half of the planet behind the plane (away from the camera)
+    plane.setFromNormalAndCoplanarPoint(u.clone().negate(), center.clone().addScaledVector(u, state.offset));
+    face.position.z = state.offset;
+    uniforms.uOffset.value = state.offset;
   }
 
-  // ---- camera poses for each story step (local to `group`) ------------------
+  // ---- camera poses (local to `group`, always square-on to the face) ---------
   const toWorld = (v) => group.localToWorld(v.clone());
-  const bis = new THREE.Vector3(Math.cos(WEDGE / 2), 0, Math.sin(WEDGE / 2));
-
   function stepPose(step) {
     if (step === 0) {
-      const d = rig.fitDistance(1.05, 1.15);
-      const local = bis.clone().multiplyScalar(d * 0.92).add(new THREE.Vector3(0, d * 0.38, 0));
-      return { position: toWorld(local), target: toWorld(new THREE.Vector3(0.08, -0.05, 0.08)) };
+      // leave room for the depth gauge (left) and layer card (right)
+      const d = rig.fitDistance(1.05, window.innerWidth < 1200 ? 1.6 : 1.35);
+      return { position: toWorld(new THREE.Vector3(0, 0, d)), target: toWorld(new THREE.Vector3()) };
     }
-    const i = step - 1;
-    const l = layers[i];
-    const thick = (l.outerRadius_km - l.innerRadius_km) / R;
-    const rMid = i === layers.length - 1 ? radii[4] * 0.35 : (radii[i] + radii[i + 1]) / 2;
-    const e = THREE.MathUtils.degToRad(i < 2 ? 22 : i === 4 ? 0 : 16);
-    const target = new THREE.Vector3(rMid * Math.cos(e), rMid * Math.sin(e), 0);
-    if (i < 2) {
-      // thin outer layers: close up, from just outside the rim
-      const off = new THREE.Vector3(0.28, 0.2, 1).normalize().multiplyScalar(Math.max(0.11, thick * 3.2));
-      return { position: toWorld(target.clone().add(off)), target: toWorld(target) };
-    }
-    // deeper layers: from inside the wedge (55° round from the first cut face),
-    // never further out than 0.95 R so the camera stays inside the planet
-    const rc = Math.min(0.95, Math.hypot(rMid, thick * 3.2));
-    const phi = THREE.MathUtils.degToRad(55);
-    const ec = e + 0.15;
-    const cam = new THREE.Vector3(rc * Math.cos(phi) * Math.cos(ec), rc * Math.sin(ec), rc * Math.sin(phi) * Math.cos(ec));
-    return { position: toWorld(cam), target: toWorld(target) };
+    const p = layerPoint(step - 1);
+    return { position: toWorld(p.clone().setZ(CLOSE_UP[step - 1])), target: toWorld(p) };
   }
 
   function depthForStep(step) {
@@ -132,16 +122,24 @@ export function createInteriorView({ planetView, rig, ui }) {
     return step === layers.length ? R : (l.depthTop_km + l.depthBottom_km) / 2;
   }
 
+  // At the overview every label shows; in a close-up only the current one
+  function showLabels(step) {
+    labelObjs.forEach((lab, i) => {
+      lab.element.classList.toggle('is-active', i === step - 1);
+      lab.element.classList.toggle('is-hidden', !(step === 0 || i === step - 1));
+    });
+  }
+
   function goToStep(step, duration = 1.5) {
     step = THREE.MathUtils.clamp(step, 0, layers.length);
     state.step = step;
-    // the glow shell would wash out the view from inside the planet
-    gsap.to(planetView.materials.atmo.uniforms.uStrength, { value: step === 0 ? 0.5 : 0, duration: 0.8 });
+    state.busy = true;
+    // the glow shell and clouds would wash out the view inside the planet
+    gsap.to(planetView.materials.atmo.uniforms.uStrength, { value: step === 0 ? 0.6 : 0, duration: 0.8 });
     gsap.to(planetView.materials.clouds.uniforms.uOpacity, { value: step === 0 ? 0.6 : 0.2, duration: 0.8 });
     gsap.to(planetView.materials.surface.uniforms.uDim, { value: step === 0 ? 0.7 : 0.3, duration: 0.8 });
-    state.busy = true;
-    sharedUniforms.uActive.value = step === 0 ? -1 : step - 1;
-    labelObjs.forEach((lab, i) => lab.element.classList.toggle('is-active', i === step - 1));
+    uniforms.uActive.value = step === 0 ? -1 : step - 1;
+    if (state.offset < 0.01) showLabels(step);
     ui.setStep(step, step === 0 ? null : layers[step - 1]);
     const p = stepPose(step);
     gsap.to(state, {
@@ -150,7 +148,7 @@ export function createInteriorView({ planetView, rig, ui }) {
       ease: 'power2.inOut',
       onUpdate: () => ui.setDepth(state.depth, step === 0 ? null : layers[step - 1]),
     });
-    return rig.flyTo(p.position, p.target, { duration, arc: 0.05, keepControls: true }).then(() => {
+    return rig.flyTo(p.position, p.target, { duration, arc: 0.04, keepControls: true }).then(() => {
       state.busy = false;
     });
   }
@@ -160,34 +158,43 @@ export function createInteriorView({ planetView, rig, ui }) {
     if (state.active) return;
     state.active = true;
     state.busy = true;
-    // open the wedge towards the camera so the flight is short
-    const cam = rig.camera.position.clone().sub(PLANET_STAGE);
-    const phiCam = Math.atan2(cam.z, cam.x);
-    group.rotation.y = WEDGE / 2 - phiCam;
+    // face the cut towards where the camera already is (elevation capped) so
+    // the flight is short and the rings face the viewer
+    const dir = rig.camera.position.clone().sub(PLANET_STAGE).normalize();
+    dir.y = THREE.MathUtils.clamp(dir.y, -0.4, 0.4);
+    dir.normalize();
+    group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
     group.visible = true;
+    state.offset = 1.0;
     planetView.setSpinScale(0.05);
     rig.controls.enabled = false;
     ui.show();
-    gsap.to(state, { theta: WEDGE, duration: 1.6, ease: 'power2.inOut', delay: 0.15 });
-    gsap.to(sharedUniforms.uReveal, { value: 1, duration: 1.0, delay: 0.25 });
-    await goToStep(0, 1.7);
+    gsap.to(uniforms.uReveal, { value: 1, duration: 0.6 });
+    gsap.to(state, {
+      offset: 0,
+      duration: 1.7,
+      ease: 'power2.inOut',
+      delay: 0.1,
+      onComplete: () => showLabels(state.step),
+    });
+    await goToStep(0, 1.8);
   }
 
-  // fly = false: close the wedge in place while another flight takes over
+  // fly = false: close the cut in place while another flight takes over
   async function exit({ fly = true } = {}) {
     if (!state.active) return;
     state.busy = true;
     ui.hide();
-    sharedUniforms.uActive.value = -1;
-    labelObjs.forEach((lab) => lab.element.classList.remove('is-active'));
-    gsap.to(state, { theta: 0, duration: 1.4, ease: 'power2.inOut', delay: fly ? 0.3 : 0 });
-    gsap.to(sharedUniforms.uReveal, { value: 0, duration: 0.8, delay: fly ? 1.0 : 0.5 });
+    uniforms.uActive.value = -1;
+    labelObjs.forEach((lab) => lab.element.classList.add('is-hidden'));
+    gsap.to(state, { offset: 1.0, duration: 1.3, ease: 'power2.inOut', delay: fly ? 0.3 : 0 });
+    gsap.to(uniforms.uReveal, { value: 0, duration: 0.4, delay: fly ? 1.3 : 1.0 });
     gsap.to(planetView.materials.atmo.uniforms.uStrength, { value: 1.25, duration: 1.4 });
     gsap.to(planetView.materials.clouds.uniforms.uOpacity, { value: 0.92, duration: 1.0 });
     gsap.to(planetView.materials.surface.uniforms.uDim, { value: 1, duration: 1.0 });
     const finish = () => {
       group.visible = false;
-      state.theta = 0;
+      state.offset = OFFSET_HIDDEN;
       state.active = false;
       state.busy = false;
       state.step = 0;
@@ -210,8 +217,7 @@ export function createInteriorView({ planetView, rig, ui }) {
     const now = performance.now();
     if (now - lastStepAt < 700) return;
     const next = state.step + dir;
-    if (next < 0) return; // "Back to surface" is explicit
-    if (next > layers.length) return;
+    if (next < 0 || next > layers.length) return; // "Back to surface" is explicit
     lastStepAt = now;
     goToStep(next);
   }
@@ -241,15 +247,38 @@ export function createInteriorView({ planetView, rig, ui }) {
   });
   window.addEventListener('keydown', (e) => {
     if (!state.active) return;
-    if (['ArrowDown', 'PageDown', ' '].includes(e.key)) nudge(1);
+    if (['ArrowDown', 'PageDown'].includes(e.key)) nudge(1);
     if (['ArrowUp', 'PageUp'].includes(e.key)) nudge(-1);
   });
 
-  function update(realTime) {
-    sharedUniforms.uTime.value = realTime;
-    if (state.theta > 0.0001 || group.visible) updatePlanes();
+  // Safety net for small screens: if two visible labels still touch, hide the
+  // later one (the current layer's label always wins)
+  let overlapTimer = 0;
+  function resolveOverlaps() {
+    const shown = labelObjs
+      .map((lab, i) => ({ el: lab.element, i, active: lab.element.classList.contains('is-active') }))
+      .filter(({ el }) => !el.classList.contains('is-hidden'));
+    shown.sort((a, b) => Number(b.active) - Number(a.active) || a.i - b.i);
+    shown.forEach(({ el }) => el.classList.remove('is-crowded'));
+    const kept = [];
+    for (const { el } of shown) {
+      const r = el.getBoundingClientRect();
+      const hit = kept.some((k) => r.left < k.right + 4 && r.right > k.left - 4 && r.top < k.bottom + 4 && r.bottom > k.top - 4);
+      if (hit) el.classList.add('is-crowded');
+      else kept.push(r);
+    }
   }
-  updatePlanes();
+
+  function update(realTime, dt = 0) {
+    uniforms.uTime.value = realTime;
+    if (group.visible || state.offset < OFFSET_HIDDEN) updatePlane();
+    overlapTimer -= dt;
+    if (state.active && overlapTimer <= 0) {
+      overlapTimer = 0.25;
+      resolveOverlaps();
+    }
+  }
+  updatePlane();
 
   return {
     id: 'interior',
