@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #05060f;
+      }
+      #ui,
+      #labels {
+        opacity: 0;
+      }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#05060f" />
+    <meta name="description" content="C3-2 Explorer: an interactive 3D tour of the exoplanet C3-2, its orange K6V star and its hypothetical interior." />
+    <title>C3-2 Explorer</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='%234fd1c5'/%3E%3Cellipse cx='16' cy='16' rx='15' ry='5' fill='none' stroke='%23ff9a3c' stroke-width='2'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="3D view of the C3-2 system"></canvas>
+    <div id="labels"></div>
+
+    <div id="ui" class="view-intro">
+      <header class="topbar">
+        <button class="logo" data-nav="intro" aria-label="C3-2 Explorer home">
+          <span class="logo-mark" aria-hidden="true"></span>
+          <span>C3-2 <b>EXPLORER</b></span>
+        </button>
+        <nav class="nav" aria-label="Sections">
+          <button data-nav="intro">Home</button>
+          <button data-nav="system">System</button>
+          <button data-nav="planet">Planet</button>
+          <button data-nav="star">Star</button>
+          <button data-nav="interior">Inside</button>
+          <button data-nav="habitability">Habitability</button>
+        </nav>
+      </header>
+
+      <div class="distance" id="distance"></div>
+
+      <section class="intro" id="intro">
+        <h1 class="intro-title" id="intro-title"></h1>
+        <p class="intro-subtitle" id="intro-subtitle"></p>
+        <button class="btn btn-primary" id="explore-btn">Explore <span aria-hidden="true">→</span></button>
+      </section>
+
+      <aside class="tools panel-glass" id="tools" aria-label="View options"></aside>
+
+      <div class="hint" id="zoom-hint" role="status">Keep zooming in to look inside <span aria-hidden="true">↓</span></div>
+      <div class="note" id="note"></div>
+
+      <footer class="bottom">
+        <div class="namecard">
+          <h2 class="view-name" id="view-name"></h2>
+          <p class="view-desc" id="view-desc"></p>
+          <button class="btn btn-link" id="learn-more">Learn more <span aria-hidden="true">+</span></button>
+        </div>
+
+        <div class="bar panel-glass">
+          <div class="rate" id="rate">
+            <label for="rate-slider">RATE</label>
+            <input type="range" id="rate-slider" min="0" max="1" step="0.001" />
+            <output id="rate-value" for="rate-slider"></output>
+            <span class="sim-date" id="sim-date"></span>
+          </div>
+          <button class="btn btn-ghost" id="facts-btn">Did you know?</button>
+          <button class="btn btn-icon" id="settings-btn" aria-label="Settings" aria-expanded="false"></button>
+          <button class="btn btn-icon" id="fullscreen-btn" aria-label="Toggle fullscreen"></button>
+        </div>
+
+        <div class="viewswitch" role="group" aria-label="View">
+          <span class="viewswitch-title">VIEW</span>
+          <div class="viewswitch-tiles" id="view-tiles"></div>
+        </div>
+      </footer>
+
+      <div class="toast panel-glass" id="fact-toast" role="status" aria-live="polite"></div>
+      <div class="popover panel-glass" id="settings-pop" hidden></div>
+
+      <aside class="drawer panel-glass" id="drawer" aria-hidden="true">
+        <header class="drawer-head">
+          <h3 id="drawer-title"></h3>
+          <button class="btn btn-icon" id="drawer-close" aria-label="Close">×</button>
+        </header>
+        <div class="drawer-body" id="drawer-body"></div>
+      </aside>
+
+      <section class="panel habit panel-glass" id="habit" aria-hidden="true" aria-labelledby="habit-title"></section>
+
+      <div class="interior-ui" id="interior-ui" aria-hidden="true">
+        <div class="gauge panel-glass" id="gauge"></div>
+        <article class="layer-card panel-glass" id="layer-card">
+          <div class="layer-card-body" id="layer-card-body"></div>
+          <div class="interior-nav" id="interior-nav"></div>
+        </article>
+      </div>
+
+      <div class="loading" id="loading"><span>Building C3-2…</span></div>
+    </div>
+
+    <noscript>C3-2 Explorer needs JavaScript and WebGL.</noscript>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
