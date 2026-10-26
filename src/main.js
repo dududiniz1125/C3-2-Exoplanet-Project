@@ -219,6 +219,8 @@ window.addEventListener('resize', updateShift);
 
 function setView(view) {
   state.view = view;
+  // the distant system's labels would sit on top of the title
+  document.body.classList.toggle('is-intro', view === 'intro');
   hud.setView(view, VIEW_TEXT[view]);
   hud.setTools(tools[view] || []);
   hud.setHint(false);
@@ -244,11 +246,12 @@ async function flyToView(view) {
   // set the new limits first: the controls update once as the flight lands
   applyLimits(view, pose);
   const long = from !== to;
-  const duration = state.view === 'intro' || view === 'intro' ? 3.2 : long ? 2.0 : 1.4;
+  // the Explore flight from deep space is a little longer than the others
+  const duration = state.view === 'intro' || view === 'intro' ? 2.6 : long ? 2.0 : 1.4;
   await rig.flyTo(pose.position, pose.target, {
     duration,
     arc: long ? 0.12 : 0.05,
-    ease: view === 'system' && duration > 3 ? 'power3.inOut' : 'power2.inOut',
+    ease: duration > 2.5 ? 'power3.inOut' : 'power2.inOut',
     keepControls: view === 'intro',
   });
   showStages(to);
